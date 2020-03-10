@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Tennis canvas</title>
+</head>
+<body>
+
+    <input id="start" type='button' value='старт!'>
+    <div id="score"></div>
+    <canvas id="tennis" width="600" height="400"></canvas>
+
+    <script>
+        'use strict'
+
+        var cvs = document.getElementById('tennis')
+        var context = cvs.getContext('2d')
+
+        var gameStatus = 0
+
+        var score = document.getElementById('score')
+        var startButton = document.getElementById('start')
+        startButton.addEventListener('click', function () {
+            if (gameStatus === 0) {
+                ball.velocityX = 5
+                ball.velocityY = 5
+
+                gameStatus = 1
+            }
+
+            if (gameStatus === 2) {
+                ball.velocityX = 5
+                ball.velocityY = 5
+
+                ball.x = cvs.width / 2
+                ball.y = cvs.height / 2
+
+                leftPaddle.y = cvs.height / 2 - 100 / 2
+                rightPaddle.y = cvs.height / 2 - 100 / 2
+
+                gameStatus = 1
+            }
+        })
+
+        var leftPaddle = {
+            x: 0,
+            y: cvs.height / 2 - 100 / 2,
+            width: 10,
+            height: 100,
+            speed: 0,
+            color: 'green',
+            score: 0
+        }
+
+        var rightPaddle = {
+            x: cvs.width - 10,
+            y: cvs.height / 2 - 100 / 2,
+            width: 10,
+            height: 100,
+            speed: 0,
+            color: 'blue',
+            score: 0
+        }
+
+        var ball = {
+            x: cvs.width / 2,
+            y: cvs.height / 2,
+            radius: 10,
+            velocityX: 0,
+            velocityY: 0,
+            color: 'red'
+        }
+
+        var shift = 16
+        var ctrl = 17
+        var up = 38
+        var down = 40
+
+        document.addEventListener('keydown', function (event) {
+            if (event.keyCode === shift) {
+                leftPaddle.speed = -5
+            } else if (event.keyCode === ctrl) {
+                leftPaddle.speed = 5
+            }
+
+            if (event.keyCode === up) {
+                rightPaddle.speed = -5
+            } else if (event.keyCode === down) {
+                rightPaddle.speed = 5
+            }
+        })
+
+        document.addEventListener('keyup', function (event) {
+            if (event.keyCode === shift) {
+                leftPaddle.speed = 0
+            } else if (event.keyCode === ctrl) {
+                leftPaddle.speed = 0
+            }
+
+            if (event.keyCode === up) {
+                rightPaddle.speed = 0
+            } else if (event.keyCode === down) {
+                rightPaddle.speed = 0
+            }
+        })
+
+        function drawRect(x, y, w, h, color) {
+            context.fillStyle = color
+            context.fillRect(x, y, w, h)
+        }
+
+        function drawCircle(x, y, r, color) {
+            context.fillStyle = color
+            context.beginPath()
+            context.arc(x, y, r, 0, Math.PI * 2, false)
+            context.closePath()
+            context.fill()
+        }
+
+        function render() {
+            drawRect(0, 0, cvs.width, cvs.height, 'rgb(235, 193, 103)')
+
+            drawRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height, leftPaddle.color)
+            drawRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height, rightPaddle.color)
+
+            drawCircle(ball.x, ball.y, ball.radius, ball.color)
+        }
+
+        function collision(tennisBall, paddles) {
+            tennisBall.top = tennisBall.y - tennisBall.radius
+            tennisBall.bottom = tennisBall.y + tennisBall.radius
+            tennisBall.left = tennisBall.x - tennisBall.radius
+            tennisBall.right = tennisBall.x + tennisBall.radius
+
+            paddles.top = paddles.y
+            paddles.bottom = paddles.y + paddles.height
+            paddles.left = paddles.x
+            paddles.right = paddles.x + paddles.width
+
+            return tennisBall.right > paddles.left && tennisBall.bottom > paddles.top && tennisBall.left < paddles.right && tennisBall.top < paddles.bottom
+        }
+
+        function update() {
+            ball.x += ball.velocityX
+            ball.y += ball.velocityY
+
+            leftPaddle.y += leftPaddle.speed
+            rightPaddle.y += rightPaddle.speed
+
+            if (leftPaddle.y <= 0) {
+                leftPaddle.y = 1
+                leftPaddle.speed = 0
+            }
+
+            if (leftPaddle.y + leftPaddle.height >= cvs.height) {
+                leftPaddle.y = cvs.height - leftPaddle.height
+                leftPaddle.speed = 0
+            }
+
+            if (rightPaddle.y <= 0) {
+                rightPaddle.y = 1
+                rightPaddle.speed = 0
+            }
+
+            if (rightPaddle.y + rightPaddle.height >= cvs.height) {
+                rightPaddle.y = cvs.height - rightPaddle.height
+                rightPaddle.speed = 0
+            }
+
+            if (ball.y + ball.radius > cvs.height || ball.y - ball.radius < 0) {
+                ball.velocityY = -ball.velocityY
+            }
+
+            var player = (ball.x < cvs.width / 2) ? leftPaddle : rightPaddle
+
+            if (collision(ball, player)) {
+                ball.velocityX = -ball.velocityX
+            }
+
+            if (gameStatus === 1 && ball.x - ball.radius <= 0) {
+                ball.velocityX = 0
+                ball.velocityY = 0
+
+                rightPaddle.score++
+                gameStatus = 2
+            } else if (gameStatus === 1 && ball.x + ball.radius >= cvs.width) {
+                ball.velocityX = 0
+                ball.velocityY = 0
+
+                leftPaddle.score++
+                gameStatus = 2
+            }
+
+            score.innerHTML = leftPaddle.score + ':' + rightPaddle.score
+        }
+
+        function game() {
+            update()
+            render()
+        }
+
+        var framePerSecond = 50
+        setInterval(game, 1000 / framePerSecond)
+
+    </script>
+
+</body>
+</html>
